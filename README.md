@@ -1,7 +1,13 @@
-# Tilt pong
+# Tilt Pong
 
 Multiplayer pong over ([socket.io](http://socket.io)).
 One device hosts the game, and multiple players join to control their "pads" using device orientation.
+
+## Setup on heroku
+
+[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy?template=https://github.com/tgwizard/tilt-pong)
+
+It is free.
 
 ## To setup locally:
 

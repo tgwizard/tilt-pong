@@ -1,7 +1,8 @@
 {
   "name": "tilt-viz",
   "version": "0.1.0",
-  "description": "",
+  "description": "Multiplayer pong over socket.io and device orientation",
+  "keywords": ["multiplayer", "pong", "websockets", "socket.io", "deviceorientatino", "tilt", "node", "express"],
   "author": "Adam Renberg <tgwizard@gmail.com>",
   "license": "MIT",
   "engines": {
