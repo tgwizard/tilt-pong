@@ -9,7 +9,7 @@ app.use(express.static('static'));
 
 // store in memory
 var games = {};
-var playerColors = ['rgba(200, 0, 0, 0.8)', 'rgba(0, 0, 200, 0.8)'];
+var playerColors = ['rgba(200, 0, 0, 0.8)', 'rgba(0, 0, 200, 0.8)', 'rgba(0, 200, 0, 0.8)', 'rgba(0, 200, 200, 0.8)'];
 
 function getOrCreateGame(gameName) {
   var game = games[gameName];

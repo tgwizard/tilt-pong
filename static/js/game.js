@@ -92,8 +92,8 @@
         placement: options.placement,
         color: options.color,
         pos: 0.5,
-        w: ['bottom', 'top'].indexOf(options.placement) !== -1 ? 80 : 10,
-        h: ['bottom', 'top'].indexOf(options.placement) !== -1 ? 10 : 80,
+        size: 80,
+        offset: 40,
         left: 0,
         right: 0,
         isHit: false,
@@ -101,10 +101,10 @@
 
       player.getPos = function(gs) {
         var pos;
-        if (player.placement === 'top')    pos = { x: gs.x + gs.w * player.pos, y: gs.y };
-        if (player.placement === 'bottom') pos = { x: gs.x + gs.w * player.pos, y: gs.y + gs.h - player.h };
-        if (player.placement === 'left')   pos = { x: gs.x, y: gs.y + gs.h * player.pos };
-        if (player.placement === 'right')  pos = { x: gs.x + gs.w - player.w, y: gs.y + gs.h * player.pos };
+        if (player.placement === 'top')    pos = { x: gs.x + gs.w * player.pos, y: -player.offset };
+        if (player.placement === 'bottom') pos = { x: gs.x + gs.w * player.pos, y: gs.vp.h + player.offset };
+        if (player.placement === 'left')   pos = { x: -player.offset, y: gs.y + gs.h * player.pos };
+        if (player.placement === 'right')  pos = { x: gs.vp.w + player.offset, y: gs.y + gs.h * player.pos };
 
         if (pos.x + player.w > gs.x + gs.w) pos.x = gs.w - player.w + gs.x;
         if (pos.y + player.h > gs.y + gs.h) pos.y = gs.h - player.h + gs.y;
@@ -129,6 +129,8 @@
     ball.pos = { x: gs.vp.w/2 - ball.size/2, y: gs.vp.h/2 - ball.size/2 };
     ball.dir = { x: -4, y: 4 };
 
+    var globalPrevDir = {}, globalNewDir = {}, globalIncoming = {};
+
 
     function updateScene(delta) {
       var PLAYER_SPEED = 0.0005;
@@ -144,40 +146,117 @@
       });
 
       // Update ball
-      ball.pos.x += ball.dir.x;
+      var newBallPos = addVector(ball.pos, ball.dir);
+
+      // detect hits with players
+      players.forEach(function(player) {
+        var pos = player.getPos(gs);
+
+        var hit = false;
+        var hitDistance = player.size + ball.size;
+        var incoming = subVector(pos, newBallPos);
+        var distance = lenVector(incoming);
+        //console.log("hitormiss", hitDistance, distance);
+        if (distance <= hitDistance) {
+          // this isn't strictly correct, but it works, kinda
+          var normalizedIncoming = mulVector(incoming, -1);
+          var reverseNormalizedIncoming = normalizeVector(normalizedIncoming);
+          newBallPos = addVector(pos, vectorWithLength(reverseNormalizedIncoming, hitDistance));
+
+          globalPrevDir = normalizeVector(ball.dir);
+          globalIncoming = normalizeVector(incoming);
+
+          var normalizedDir = mulVector(ball.dir, -1);
+          var reverseNormalizedDir = normalizeVector(normalizedDir);
+
+          var angle = angleVector(reverseNormalizedIncoming, reverseNormalizedDir);
+          //console.log(angle * 180 / Math.PI, angle);
+          // TODO: this is not correct, fix it
+          var newBallDir = reverseNormalizedDir;//rotateVector(reverseNormalizedDir, -angle*2);
+
+          ball.dir = mulVector(newBallDir, lenVector(ball.dir));
+
+          globalNewDir = normalizeVector(ball.dir);
+
+          hit = true;
+        } else {
+
+        }
+
+
+
+        player.isHit = hit;
+      });
+
+      ball.pos = newBallPos;
+
+
+
       if (ball.pos.x + ball.size > gs.x + gs.w) {
         ball.pos.x = gs.w - ball.size + gs.x;
         ball.dir.x = -ball.dir.x;
-      } else if (ball.pos.x < gs.x) {
-        ball.pos.x = gs.x;
+      } else if (ball.pos.x - ball.size < gs.x) {
+        ball.pos.x = gs.x + ball.size;
         ball.dir.x = -ball.dir.x;
       }
 
-      ball.pos.y += ball.dir.y;
+
       if (ball.pos.y + ball.size > gs.y + gs.h) {
         ball.pos.y = gs.h - ball.size + gs.y;
         ball.dir.y = -ball.dir.y;
-      } else if (ball.pos.y < gs.y) {
-        ball.pos.y = gs.y;
+      } else if (ball.pos.y - ball.size < gs.y) {
+        ball.pos.y = gs.y + ball.size;
         ball.dir.y = -ball.dir.y;
       }
 
       // detect hits
-      players.forEach(function(player) {
-        var pos = player.getPos(gs);
 
-        var hit = true;
-        if (ball.pos.x + ball.size < pos.x) hit = false;
-        if (ball.pos.x > pos.x + player.w) hit = false;
-        if (ball.pos.y + ball.size < pos.y) hit = false;
-        if (ball.pos.y > pos.y + player.h) hit = false;
+    }
 
-        if (!player.isHit && hit) {
-          console.log('hit player', player.name);
-        }
+    function addVector(a, b) {
+      return { x: a.x + b.x, y: a.y + b.y };
+    }
 
-        player.isHit = hit;
-      });
+    function subVector(a, b) {
+      return { x: a.x - b.x, y: a.y - b.y };
+    }
+
+    function mulVector(a, scalar) {
+      return { x: a.x * scalar, y: a.y * scalar };
+    }
+
+    function normalizeVector(a) {
+      var len = lenVector(a);
+      return mulVector(a, 1/len);
+    }
+
+    function vectorWithLength(a, len) {
+      return mulVector(normalizeVector(a), len);
+    }
+
+    function lenVector(a) {
+      return Math.sqrt(a.x*a.x + a.y*a.y)
+    }
+
+    function dotProduct(a, b) {
+      return a.x * b.x + a.y * b.y;
+    }
+
+    function angleVector(a, b) {
+      // returns the angle in radians
+      return Math.acos(dotProduct(a, b));
+    }
+
+    function rotateVector(a, angle) {
+      // angle is in radians
+      return {
+        x: a.x * Math.cos(angle) - a.y * Math.sin(angle),
+        y: a.x * Math.sin(angle) + a.y * Math.cos(angle),
+      };
+    }
+
+    function calcDistance(a, b) {
+      return lenVector(subVector(a, b));
     }
 
     function drawScene() {
@@ -190,6 +269,8 @@
         drawPlayer(gs, player);
       });
       drawBall(ball);
+
+      //drawStuff(gs);
     }
 
     function drawBorder(vp) {
@@ -204,12 +285,36 @@
       if (player.isHit) ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
       else ctx.fillStyle = player.color;
       var pos = player.getPos(gs);
-      ctx.fillRect(pos.x, pos.y, player.w, player.h);
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, player.size, 0, Math.PI*2, false);
+      ctx.fill();
     }
 
     function drawBall(ball) {
-      ctx.fillStyle = 'rgba(200, 200, 0, 0.8)';
-      ctx.fillRect(ball.pos.x, ball.pos.y, ball.size, ball.size);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.beginPath();
+      ctx.arc(ball.pos.x, ball.pos.y, ball.size, 0, Math.PI*2, false);
+      ctx.fill();
+    }
+
+    function drawStuff(gs) {
+      ctx.strokeStyle = 'rgba(0, 200, 0, 0.8)';
+      ctx.beginPath();
+      ctx.moveTo(100, 100);
+      ctx.lineTo(100 + globalNewDir.x * 40, 100 + globalNewDir.y * 40);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(200, 0, 0, 0.8)';
+      ctx.beginPath();
+      ctx.moveTo(100, 100);
+      ctx.lineTo(100 + globalPrevDir.x * 40, 100 + globalPrevDir.y * 40);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.beginPath();
+      ctx.moveTo(100, 100);
+      ctx.lineTo(100 + globalIncoming.x * 40, 100 + globalIncoming.y * 40);
+      ctx.stroke();
     }
 
     var prevTime = new Date();
