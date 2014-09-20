@@ -62,9 +62,12 @@ io.on('connection', function(socket) {
     console.log('join game', data);
     var game = getOrCreateGame(data.gameName);
 
+    var num = 1;
+    game.players.forEach(function(p) { if (p.player.num === num) num += 1; });
     var player = {
-      playerName: 'Player ' + (game.players.length + 1),
-      playerColor: playerColors[game.players.length],
+      num: num,
+      playerName: 'Player ' + num,
+      playerColor: playerColors[(num - 1) % playerColors.length],
     };
 
     game.players.push({
