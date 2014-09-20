@@ -1,0 +1,11 @@
+{
+  "name": "tilt-viz",
+  "version": "0.1.0",
+  "description": "",
+  "author": "Adam Renberg <tgwizard@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.9.3",
+    "socket.io": "^1.1.0"
+  }
+}
