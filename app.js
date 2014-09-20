@@ -11,12 +11,23 @@ app.use(express.static('static'));
 var games = {};
 var playerColors = ['rgba(200, 0, 0, 0.8)', 'rgba(0, 0, 200, 0.8)'];
 
+function getOrCreateGame(gameName) {
+  var game = games[gameName];
+  if (game) return game;
+
+  console.log('creating new game', gameName);
+  return games[gameName] = {
+    hostSocket: null,
+    players: [],
+  };
+}
+
 function leaveGame(gameName, leavingPlayer) {
   var game = games[gameName];
-  if (!game) return console.log('FAIL, no game with name', gameName);
+  if (!game) return console.log('no game with name', gameName, 'to leave');
   game.players = game.players.filter(function(player) { return player.player !== leavingPlayer; });
 
-  game.hostSocket.emit('player left', leavingPlayer);
+  if (game.hostSocket) game.hostSocket.emit('player left', leavingPlayer);
 }
 
 io.on('connection', function(socket) {
@@ -26,34 +37,30 @@ io.on('connection', function(socket) {
   console.log('user connected');
   socket.on('disconnect', function() {
     console.log('user disconnected');
-    console.log('destroying games', hostedGames);
-    hostedGames.forEach(function(g) { delete games[g]; });
+    console.log('unhosting games', hostedGames);
+    hostedGames.forEach(function(g) { games[g].hostSocket = null });
     console.log('leaving games', joinedGames);
     joinedGames.forEach(function(jg) { leaveGame(jg.gameName, jg.player); });
   });
 
   socket.on('orientation data', function(data) {
-    console.log('orientation data', data);
-    var game = games[data.gameName]
-    if (!game) return console.log('FAIL, no game with name', data.gameName);
-
-    game.hostSocket.emit('orientation data', data);
+    var game = getOrCreateGame(data.gameName);
+    if (game.hostSocket) game.hostSocket.emit('orientation data', data);
   });
 
   socket.on('host game', function(data) {
     console.log('host game', data);
-    games[data.gameName] = {
-      hostSocket: socket,
-      players: [],
-    }
+    var game = getOrCreateGame(data.gameName);
+    game.hostSocket = socket;
 
     hostedGames.push(data.gameName);
+
+    game.players.forEach(function(p) { socket.emit('new player joined', p.player); });
   });
 
   socket.on('join game', function(data) {
     console.log('join game', data);
-    var game = games[data.gameName]
-    if (!game) return console.log('FAIL, no game with name', data.gameName);
+    var game = getOrCreateGame(data.gameName);
 
     var player = {
       playerName: 'Player ' + (game.players.length + 1),
@@ -68,7 +75,7 @@ io.on('connection', function(socket) {
 
     console.log('new player joined', player);
 
-    game.hostSocket.emit('new player joined', player);
+    if (game.hostSocket) game.hostSocket.emit('new player joined', player);
     socket.emit('game joined', player);
   });
 });

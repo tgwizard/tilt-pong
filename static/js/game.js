@@ -30,7 +30,7 @@
     socket.emit('host game', { gameName: 'adam' });
 
     var players = [];
-    playerPlacementOrder = ['bottom', 'top'];
+    playerPlacementOrder = ['left', 'right', 'bottom', 'top'];
 
     socket.on('new player joined', function(data) {
       console.log('new player joined', data);
@@ -92,8 +92,8 @@
         placement: options.placement,
         color: options.color,
         pos: 0.5,
-        w: 80,
-        h: 10,
+        w: ['bottom', 'top'].indexOf(options.placement) !== -1 ? 80 : 10,
+        h: ['bottom', 'top'].indexOf(options.placement) !== -1 ? 10 : 80,
         left: 0,
         right: 0,
         isHit: false,
@@ -102,9 +102,12 @@
       player.getPos = function(gs) {
         var pos;
         if (player.placement === 'top')    pos = { x: gs.x + gs.w * player.pos, y: gs.y };
-        if (player.placement === 'bottom') pos = { x: gs.x + gs.w * player.pos, y: gs.y + gs.h - 10 };
+        if (player.placement === 'bottom') pos = { x: gs.x + gs.w * player.pos, y: gs.y + gs.h - player.h };
+        if (player.placement === 'left')   pos = { x: gs.x, y: gs.y + gs.h * player.pos };
+        if (player.placement === 'right')  pos = { x: gs.x + gs.w - player.w, y: gs.y + gs.h * player.pos };
 
-        if (pos.x + player.w > gs.w + gs.x) pos.x = gs.w - player.w + gs.x;
+        if (pos.x + player.w > gs.x + gs.w) pos.x = gs.w - player.w + gs.x;
+        if (pos.y + player.h > gs.y + gs.h) pos.y = gs.h - player.h + gs.y;
         return pos;
       };
 
