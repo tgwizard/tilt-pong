@@ -1,7 +1,7 @@
 {
   "name": "Tilt Pong",
   "description": "Multiplayer pong over socket.io and device orientation",
-  "keywords": ["multiplayer", "pong", "websockets", "socket.io", "deviceorientatinon", "tilt", "node", "express"],
+  "keywords": ["multiplayer", "pong", "websockets", "socket.io", "deviceorientation", "tilt", "node", "express"],
   "website": "https://github.com/tgwizard/tilt-pong",
   "repository": "https://github.com/tgwizard/tilt-pong"
 }
