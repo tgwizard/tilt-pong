@@ -129,8 +129,10 @@
     ball.pos = { x: gs.vp.w/2 - ball.size/2, y: gs.vp.h/2 - ball.size/2 };
     ball.dir = { x: -4, y: 4 };
 
-    var globalPrevDir = {}, globalNewDir = {}, globalIncoming = {};
-
+    // for debug
+    // var global1 = { x: 0, y: 0 };
+    // var global2 = { x: 0, y: 0 };
+    // var global3 = { x: 0, y: 0 };
 
     function updateScene(delta) {
       var PLAYER_SPEED = 0.0005;
@@ -146,7 +148,7 @@
       });
 
       // Update ball
-      var newBallPos = addVector(ball.pos, ball.dir);
+      ball.pos = addVector(ball.pos, ball.dir);
 
       // detect hits with players
       players.forEach(function(player) {
@@ -154,44 +156,31 @@
 
         var hit = false;
         var hitDistance = player.size + ball.size;
-        var incoming = subVector(pos, newBallPos);
+        var incoming = subPos(pos, ball.pos);
         var distance = lenVector(incoming);
-        //console.log("hitormiss", hitDistance, distance);
+
         if (distance <= hitDistance) {
-          // this isn't strictly correct, but it works, kinda
-          var normalizedIncoming = mulVector(incoming, -1);
-          var reverseNormalizedIncoming = normalizeVector(normalizedIncoming);
-          newBallPos = addVector(pos, vectorWithLength(reverseNormalizedIncoming, hitDistance));
+          var normIncoming = normalizeVector(incoming);
+          var normDir = normalizeVector(ball.dir);
+          var normTangent = rotateVector(normIncoming, Math.PI/2);
 
-          globalPrevDir = normalizeVector(ball.dir);
-          globalIncoming = normalizeVector(incoming);
+          var angle = angleVector(normDir, normTangent);
+          var normNewDir = rotateVector(normTangent, angle);
 
-          var normalizedDir = mulVector(ball.dir, -1);
-          var reverseNormalizedDir = normalizeVector(normalizedDir);
+          // for debug
+          // global1 = cpyVector(normDir);
+          // global2 = cpyVector(normTangent);
+          // global3 = cpyVector(normNewDir);
 
-          var angle = angleVector(reverseNormalizedIncoming, reverseNormalizedDir);
-          //console.log(angle * 180 / Math.PI, angle);
-          // TODO: this is not correct, fix it
-          var newBallDir = reverseNormalizedDir;//rotateVector(reverseNormalizedDir, -angle*2);
-
-          ball.dir = mulVector(newBallDir, lenVector(ball.dir));
-
-          globalNewDir = normalizeVector(ball.dir);
+          ball.dir = mulVector(normNewDir, lenVector(ball.dir));
 
           hit = true;
-        } else {
-
         }
-
-
 
         player.isHit = hit;
       });
 
-      ball.pos = newBallPos;
-
-
-
+      // detect hits with game border
       if (ball.pos.x + ball.size > gs.x + gs.w) {
         ball.pos.x = gs.w - ball.size + gs.x;
         ball.dir.x = -ball.dir.x;
@@ -199,8 +188,6 @@
         ball.pos.x = gs.x + ball.size;
         ball.dir.x = -ball.dir.x;
       }
-
-
       if (ball.pos.y + ball.size > gs.y + gs.h) {
         ball.pos.y = gs.h - ball.size + gs.y;
         ball.dir.y = -ball.dir.y;
@@ -208,16 +195,13 @@
         ball.pos.y = gs.y + ball.size;
         ball.dir.y = -ball.dir.y;
       }
-
-      // detect hits
-
     }
 
     function addVector(a, b) {
       return { x: a.x + b.x, y: a.y + b.y };
     }
 
-    function subVector(a, b) {
+    function subPos(a, b) {
       return { x: a.x - b.x, y: a.y - b.y };
     }
 
@@ -230,12 +214,12 @@
       return mulVector(a, 1/len);
     }
 
-    function vectorWithLength(a, len) {
-      return mulVector(normalizeVector(a), len);
-    }
-
     function lenVector(a) {
       return Math.sqrt(a.x*a.x + a.y*a.y)
+    }
+
+    function cpyVector(a) {
+      return { x: a.x, y: a.y };
     }
 
     function dotProduct(a, b) {
@@ -255,10 +239,6 @@
       };
     }
 
-    function calcDistance(a, b) {
-      return lenVector(subVector(a, b));
-    }
-
     function drawScene() {
       var gs = getGameBoardSize();
 
@@ -270,7 +250,8 @@
       });
       drawBall(ball);
 
-      //drawStuff(gs);
+      // for debug
+      // drawStuff(gs);
     }
 
     function drawBorder(vp) {
@@ -301,19 +282,19 @@
       ctx.strokeStyle = 'rgba(0, 200, 0, 0.8)';
       ctx.beginPath();
       ctx.moveTo(100, 100);
-      ctx.lineTo(100 + globalNewDir.x * 40, 100 + globalNewDir.y * 40);
-      ctx.stroke();
-
-      ctx.strokeStyle = 'rgba(200, 0, 0, 0.8)';
-      ctx.beginPath();
-      ctx.moveTo(100, 100);
-      ctx.lineTo(100 + globalPrevDir.x * 40, 100 + globalPrevDir.y * 40);
+      ctx.lineTo(100 + global1.x * 40, 100 + global1.y * 40);
       ctx.stroke();
 
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
       ctx.beginPath();
       ctx.moveTo(100, 100);
-      ctx.lineTo(100 + globalIncoming.x * 40, 100 + globalIncoming.y * 40);
+      ctx.lineTo(100 + global2.x * 40, 100 + global2.y * 40);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(200, 0, 0, 0.8)';
+      ctx.beginPath();
+      ctx.moveTo(100, 100);
+      ctx.lineTo(100 + global3.x * 40, 100 + global3.y * 40);
       ctx.stroke();
     }
 
